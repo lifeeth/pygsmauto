@@ -7,26 +7,28 @@ def probe():
     from gsmmodem import GsmModem
     import serial
     ports = []
-    if platform.system() == "Linux" :
-        import scanlinux
-        for port in scanlinux.scan():
-            try:
-                modem = GsmModem(port=port, logger = logger)
-                ports.append(port)
-            except serial.serialutil.SerialException:
-                pass
-        return ports
 
-    if platform.system() == "Windows" :
-        import scanwin32
-        for port in scanwin32.scan():
+    if platform.system() == "Linux":
+        import scanlinux as portscanner
+    if platform.system() == "Windows":
+        import scanwin32 as portscanner
+    if platform.system() == "Darwin":
+        import scanmac as portscanner
+
+    try:
+        for port in portscanner.scan():
             try:
-                modem = GsmModem(port=port, logger = logger)
+                GsmModem(port=port, timeout=10, baudrate=115200, logger=logger)
                 ports.append(port)
-            except serial.serialutil.SerialException:
+            except serial.serialutil.SerialException, e:
                 pass
+    except NameError, e:
+        pass
+    return ports
 
 def logger(_modem, message_, type_):
-    """This just disables debug"""
+    """Supress all output from pySerial and gsmmodem"""
     pass
 
+if __name__ == "__main__":
+    print "\n".join(probe())
